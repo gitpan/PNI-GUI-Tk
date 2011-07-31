@@ -1,20 +1,13 @@
-use 5.008008008;
 use ExtUtils::MakeMaker;
 
-WriteMakefile(
-    NAME         => 'PNI-GUI-Tk',
-    VERSION_FROM => 'lib/PNI/GUI/Tk.pm',
-    EXE_FILES    => ['pniguitk.pl'],
-    PREREQ_PM    => {
-        PNI           => '0.11',
-        PNI::Node::Tk => '0.11'
-    },
-    (
-        $] >= 5.005
-        ? (
-            ABSTRACT_FROM => 'lib/PNI/GUI/Tk.pm',
-            AUTHOR        => 'G. Casati <fibo@cpan.org>'
-          )
-        : ()
-    ),
-);
+WriteMakefile
+  ABSTRACT_FROM => 'lib/PNI/GUI/Tk.pm',
+  AUTHOR        => 'G. Casati <fibo@cpan.org>',
+  EXE_FILES     => ['pniguitk'],
+  NAME          => 'PNI-GUI-Tk',
+  PREREQ_PM     => {
+    PNI::Core      => '0.03',
+    PNI::Node::Tk  => '0.14',
+    Tk::MatchEntry => '0.4',
+  },
+  VERSION_FROM => 'lib/PNI/GUI/Tk.pm',

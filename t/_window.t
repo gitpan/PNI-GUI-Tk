@@ -1,20 +1,27 @@
 use strict;
-use Test::More;
-use PNI::GUI::Tk;
+use PNI;
+use PNI::GUI::Tk::App;
+use PNI::GUI::Tk::Controller;
 use PNI::GUI::Tk::Window;
-use PNI::GUI::Tk::Scenario;
+use PNI::Node::Tk;
+use Test::More;
 
-my $gui      = PNI::GUI::Tk->new;
-my $scenario = PNI::GUI::Tk::Scenario->new;
-my $window   = PNI::GUI::Tk::Window->new( gui => $gui, scenario => $scenario );
+my $app        = PNI::GUI::Tk::App->new;
+my $controller = PNI::GUI::Tk::Controller->new( app => $app );
+
+my $window = PNI::GUI::Tk::Window->new( controller => $controller );
 isa_ok $window, 'PNI::GUI::Tk::Window';
 
-isa_ok $window->get_canvas, 'PNI::GUI::Tk::Canvas', 'get_canvas';
-isa_ok $window->get_menu,   'PNI::GUI::Tk::Menu',   'get_menu';
+isa_ok $window->get_controller, 'PNI::GUI::Tk::Controller', 'get_controller';
+is $window->get_controller, $controller, 'get_controller';
+isa_ok $window->get_tk_main_window, 'Tk::MainWindow', 'get_tk_main_window';
 
-ok PNI::RUN;
+# show the window
+ok PNI::task;
 
 # wait a moment so user can see the window
 sleep 1;
 
 done_testing;
+__END__
+

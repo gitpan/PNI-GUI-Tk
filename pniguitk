@@ -1,0 +1,17 @@
+#!/bin/env perl
+use strict;
+use PNI::GUI::Tk::App;
+
+my $app = PNI::GUI::Tk::App->new;
+
+$app->run;
+
+1;
+__END__
+
+=head1 NAME
+
+C<pniguitk> - PNI::GUI::Tk launcher
+
+=cut
+

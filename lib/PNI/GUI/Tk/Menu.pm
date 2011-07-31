@@ -1,56 +1,51 @@
 package PNI::GUI::Tk::Menu;
 use strict;
-use warnings;
-our $VERSION = '0.11';
-use base 'PNI::GUI::Tk::Item';
+use base 'PNI::Item';
 use Tk::Dialog;
 
 sub new {
     my $class = shift;
     my $arg   = {@_};
+    my $self  = $class->SUPER::new(@_)
+      or return PNI::Error::unable_to_create_item;
 
-    # window arg is required and it must be a PNI::GUI::Tk::Window
-    my $window = $arg->{window} or return;
-    $window->isa('PNI::GUI::Tk::Window') or return;
+    # $controller is not required but should be a PNI::GUI::Tk::Controller
+    my $controller = $arg->{controller};
+    if ( defined $controller ) {
+        $controller->isa('PNI::GUI::Tk::Controller')
+          or return PNI::Error::invalid_argument_type;
+    }
+    $self->add( controller => $controller );
 
-    my $gui      = $window->get_gui;
-    my $scenario = $window->get_scenario;
+    my $window = $self->get_window;
 
-    my $tk_menu = $window->tk->Menu( -type => 'menubar' );
-    $tk_menu->isa('Tk::Menu') or return;
+    my $tk_window = $window->get_tk_main_window;
 
-    my $self = $class->SUPER::new(
-        gui      => $gui,
-        scenario => $scenario,
-        tk       => $tk_menu
-    );
-    $self->add( 'window' => $window );
+    my $tk_menu = $tk_window->Menu( -type => 'menubar' );
 
     # attach menu to its window
-    $window->tk->configure( -menu => $self->tk );
+    $tk_window->configure( -menu => $tk_menu );
 
     # populate menu entries
-    $self->tk->Cascade(
+    $tk_menu->Cascade(
         -label     => 'Scenario',
         -tearoff   => 1,
         -menuitems => [
             [
-                Button   => 'New',
-                -command => [
-                    sub {
-                        $self->get_gui->add_window;
-                        return;
-                      }
-                ]
+                Button   => 'Open',
+                -command => [ sub { $controller->open_pni_file; } ]
+            ],
+            [
+                Button   => 'Save',
+                -command => [ sub { $controller->save_pni_file; } ]
+            ],
+            [
+                Button   => 'Save as',
+                -command => [ sub { $controller->save_as_pni_file; } ]
             ],
             [
                 Button   => 'Close',
-                -command => [
-                    sub {
-                        $self->get_gui->del_window( $self->get_window );
-                        return;
-                      }
-                ]
+                -command => [ sub { $controller->close_window; } ]
             ],
             [
                 Button   => 'Exit',
@@ -58,7 +53,7 @@ sub new {
             ]
         ]
     );
-    $self->tk->Cascade(
+    $tk_menu->Cascade(
         -label     => '~Help',
         -tearoff   => 0,
         -menuitems => [
@@ -66,23 +61,57 @@ sub new {
                 Button   => 'About',
                 -command => [
                     sub {
-                        print "ue";
-                        my $info_window = $self->get_window->tk->Toplevel(-title=>'Perl Node Interface');
-						$info_window->geometry('300x150+100+100');
-                        $info_window->Label( -text => 'PNI version: 0.11' )->pack;
-                        $info_window->Label( -text => 'PNI::GUI::Tk version 0.11' )->pack;
-                        $info_window->Label( -text => 'for more info point your browser to' )->pack;
-                        $info_window->Label( -text => 'http://perl-node-interface.blogspot.com' )->pack;
-						$info_window->resizable(0,0);
+                        my $info_window = $tk_window->Toplevel(
+                            -title => 'Perl Node Interface' );
+                        $info_window->geometry('200x150+100+100');
+                        $info_window->Label( -text => $_ )
+                          ->pack( -anchor => 'w' )
+                          for (
+                            'PNI version: ' . $PNI::VERSION,
+                            'PNI::GUI::Tk version: ' . $PNI::GUI::Tk::VERSION,
+                            'For more info point your browser to',
+                            'http://perl-node-interface.blogspot.com'
+                          );
+                        $info_window->resizable( 0, 0 );
                       }
                 ]
             ]
         ]
     );
 
+    ### new: __PACKAGE__ . ' id=' . $self->id
     return $self;
 }
 
-sub get_window { return shift->get('window'); }
+sub get_controller { return shift->get('controller') }
+
+sub get_window { return shift->get_controller->get_window; }
 
 1;
+__END__
+
+=head1 NAME
+
+PNI::GUI::Tk::Menu - 
+
+
+=head1 METHODS
+
+=head2 C<get_controller>
+
+=head2 C<get_window>
+
+
+
+=head1 AUTHOR
+
+G. Casati , E<lt>fibo@cpan.orgE<gt>
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 2009-2011, Gianluca Casati
+
+This program is free software, you can redistribute it and/or modify it
+under the same terms of the Artistic License version 2.0 .
+
+=cut

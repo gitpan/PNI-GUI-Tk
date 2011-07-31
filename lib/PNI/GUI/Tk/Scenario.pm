@@ -1,110 +1,115 @@
 package PNI::GUI::Tk::Scenario;
 use strict;
-use warnings;
-our $VERSION = '0.11';
-use base 'PNI::Scenario';
-use PNI::GUI::Tk::Scenario::Link;
-use PNI::GUI::Tk::Scenario::Node;
+use base 'PNI::GUI::Scenario';
 use PNI::Error;
-use PNI::Link;
-use PNI::Node;
+use PNI::GUI::Node;
+use PNI::GUI::Tk::Edge;
+use PNI::GUI::Tk::Node;
 
 sub new {
-    my $class = shift;
+    my $self = shift->SUPER::new(@_)
+      or return PNI::Error::unable_to_create_item;
+    my $arg = {@_};
 
-    my $self = $class->SUPER::new() or return;
+    # controller is required
+    my $controller = $arg->{controller}
+      or return PNI::Error::missing_required_argument;
 
-    # window attribute it is not passed at creation
-    # it is filled by PNI::GUI::Tk::Window constructor
-    $self->add('window');
+    # controller must be a PNI::GUI::Tk::Controller
+    $controller->isa('PNI::GUI::Tk::Controller')
+      or return PNI::Error::invalid_argument_type;
 
-    # store a relation between nodes an its input_tk_ids
-    $self->add( node_of_input_tk_id => {} );
+    $self->add( controller => $controller );
 
     return $self;
 }
 
-sub add_link {
-    my $self         = shift;
-    my $arg          = {@_};
-    my $source       = $arg->{source};
-    my $target       = $arg->{target};
-    my $input_tk_id  = $arg->{input_tk_id};
-    my $line_tk_id   = $arg->{line_tk_id};
-    my $output_tk_id = $arg->{output_tk_id};
-    my $source_node  = $arg->{source_node} or return;
-    my $target_node  = $arg->{target_node} or return;
+# return $edge : PNI::GUI::Tk::Edge
+sub add_edge {
+    my $self       = shift;
+    my $controller = $self->get_controller;
 
-    my $tk = $self->get_canvas->tk;
-
-    my ( $x11, $y11, $x12, $y12 ) = $tk->coords($output_tk_id);
-    my $start_x = ( $x11 + $x12 ) / 2;
-    my $start_y = ( $y11 + $y12 ) / 2;
-    my $start   = [ $start_x, $start_y ];
-
-    my ( $x21, $y21, $x22, $y22 ) = $tk->coords($input_tk_id);
-    my $end_x = ( $x21 + $x22 ) / 2;
-    my $end_y = ( $y21 + $y22 ) / 2;
-    my $end   = [ $end_x, $end_y ];
-
-    my $pni_link = PNI::Link->new( source => $source, target => $target )
-      or return PNI::Error::unable_to_create_item;
-
-    my $link = PNI::GUI::Tk::Scenario::Link->new(
-        input_tk_id  => $input_tk_id,
-        line_tk_id   => $line_tk_id,
-        output_tk_id => $output_tk_id,
-        link         => $pni_link,
-        start        => [ $start_x, $start_y ],
-        end          => [ $end_x, $end_y ],
-        scenario     => $self
+    my $edge = PNI::GUI::Tk::Edge->new(
+        controller => $controller,
+        @_
     ) or return PNI::Error::unable_to_create_item;
 
-    # attach link to nodes
-    $source_node->add_output_link($link);
-    $target_node->add_input_link($link);
+    $self->get('edges')->{ $edge->id } = $edge;
 
-    return 1;
+    return $edge;
 }
 
+# return $node : PNI::GUI::Tk::Node
 sub add_node {
-    my $self      = shift;
-    my $arg       = {@_};
-    my $node_type = $arg->{node_type}
+    my $self       = shift;
+    my $controller = $self->get_controller;
+    my $scenario   = $self->get_scenario;
+
+# TODO questo sarebe sbagliato, funziona solo perche' non si accavallano i nomi degli argomenti
+#      infatti in add_edge mi dava problemi
+    my $pni_node = $scenario->add_node(@_)
+      or return PNI::Error::unable_to_create_item;
+
+    my $node = PNI::GUI::Tk::Node->new(
+        controller => $controller,
+        node       => $pni_node,
+        @_
+    ) or return PNI::Error::unable_to_create_item;
+
+    $self->get('nodes')->{ $node->id } = $node;
+
+    return $node;
+}
+
+sub del_edge {
+    my $self = shift;
+    my $edge = shift
       or return PNI::Error::missing_required_argument;
 
-    my $node = PNI::NODE $node_type;
+    delete $self->get('edges')->{ $edge->id };
 
-    return PNI::GUI::Tk::Scenario::Node->new(
-        @_,
-        node     => $node,
-        scenario => $self
-    );
-}
-
-sub get_canvas {
-    my $self = shift;
-
-    # if window was not initialized there will be no canvas
-    my $window = $self->get_window or return;
-    return $window->get('canvas');
-}
-
-sub get_node_of_input_tk_id {
-    my $self        = shift;
-    my $input_tk_id = shift;
-    return $self->get('node_of_input_tk_id')->{$input_tk_id};
-}
-
-sub get_window { return shift->get('window'); }
-
-sub set_node_of_input_tk_id {
-    my $self        = shift;
-    my $input_tk_id = shift or return;
-    my $node        = shift or return;
-    $self->get('node_of_input_tk_id')->{$input_tk_id} = $node;
     return 1;
+}
+
+sub get_controller { shift->get('controller') }
+
+# return @inputs: PNI::GUI::Tk::Input
+sub get_inputs {
+    my $self = shift;
+    my @inputs;
+
+    # TODO fai code cleaning con grep e map come fa Marcos
+    for my $node ( $self->get_nodes ) {
+        push @inputs, $node->get_inputs;
+    }
+
+    return @inputs;
+}
+
+# return @nodes : PNI::GUI::Tk::Node
+sub get_nodes { values %{ shift->get('nodes') }; }
+
+# return @outputs : PNI::GUI::Tk::Output
+sub get_outputs {
+    my $self = shift;
+    my @outputs;
+
+    # TODO fai code cleaning con grep e map come fa Marcos
+    for my $node ( $self->get_nodes ) {
+        push @outputs, $node->get_outputs;
+    }
+
+    return @outputs;
 }
 
 1;
+__END__
+
+=head1 NAME
+
+PNI::GUI::Tk::Scenario - 
+
+=head1 METHODS
+
+=cut
 

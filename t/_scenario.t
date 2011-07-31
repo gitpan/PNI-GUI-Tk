@@ -1,27 +1,21 @@
 use strict;
-use Test::More;
-use PNI::GUI::Tk;
+use PNI::GUI::Tk::App;
+use PNI::GUI::Tk::Controller;
 use PNI::GUI::Tk::Scenario;
-use PNI::GUI::Tk::Window;
+use PNI::Scenario;
+use Test::More;
 
-my $gui      = PNI::GUI::Tk->new;
-my $scenario = PNI::GUI::Tk::Scenario->new;
+my $app          = PNI::GUI::Tk::App->new;
+my $controller   = PNI::GUI::Tk::Controller->new( app => $app );
+my $pni_scenario = PNI::Scenario->new;
+my $scenario     = PNI::GUI::Tk::Scenario->new(
+    controller => $controller,
+    scenario   => $pni_scenario,
+);
 isa_ok $scenario, 'PNI::GUI::Tk::Scenario';
 
-is $scenario->get_window, undef, 'get_window before set_window';
-is $scenario->get_canvas, undef, 'get_canvas before set_canvas';
-
-# add a window to scenario
-my $window = PNI::GUI::Tk::Window->new( gui => $gui, scenario => $scenario );
-
-is $scenario->get_window, $window, 'get_window';
-is $scenario->get_canvas, $window->get_canvas, 'get_canvas';
-
-isa_ok $scenario->add_node(
-    node_type => 'Perlvar::Perl_version',
-    center    => [ 10, 10 ]
-  ),
-  'PNI::GUI::Tk::Scenario::Node';
+isa_ok $scenario->get_file, 'PNI::File';
+is $scenario->get_scenario, $pni_scenario;
 
 done_testing;
 __END__
