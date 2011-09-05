@@ -1,7 +1,6 @@
 package PNI::GUI::Tk::Canvas::Window;
+use parent 'PNI::GUI::Tk::Canvas::Item';
 use strict;
-use warnings;
-use base 'PNI::GUI::Tk::Canvas::Item';
 use PNI::Error;
 
 sub new {
@@ -10,16 +9,20 @@ sub new {
     my $self  = $class->SUPER::new(@_)
       or return PNI::Error::unable_to_create_item;
 
-    my $window = $arg->{window};
-    $self->add( window => $window );
+    $arg->{window}
+      or return PNI::Error::missing_required_argument;
 
-    my $y = $arg->{y};
-    $self->add( y => $y );
+    $arg->{y}
+      or return PNI::Error::missing_required_argument;
 
-    my $x = $arg->{x};
-    $self->add( x => $x );
+    $arg->{x}
+      or return PNI::Error::missing_required_argument;
 
-    $self->set( tk_id => $self->get_tk_canvas->createWindow( $x, $y, -window => $window ) );
+    $self->set(
+        tk_id => $self->get_tk_canvas->createWindow(
+            $arg->{x}, $arg->{y}, -window => $arg->{window}
+        )
+    );
 
     return $self;
 }
@@ -32,3 +35,4 @@ __END__
 PNI::GUI::Tk::Canvas::Window - Tk::Canvas window item
 
 =cut
+

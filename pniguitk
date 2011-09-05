@@ -4,9 +4,9 @@ use PNI::GUI::Tk::App;
 
 my $app = PNI::GUI::Tk::App->new;
 
-$app->run;
+exit( $app->run() );
 
-1;
+1
 __END__
 
 =head1 NAME

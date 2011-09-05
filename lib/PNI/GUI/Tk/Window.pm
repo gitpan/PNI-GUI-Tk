@@ -1,49 +1,60 @@
 package PNI::GUI::Tk::Window;
+use parent qw( PNI::Item PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::Item';
 use PNI;
 use PNI::Error;
 
-# TODO window title should be scenario file name
-
 sub new {
-    my $class = shift;
-    my $arg   = {@_};
-    my $self  = $class->SUPER::new(@_)
-      or return PNI::Error::unable_to_create_item;
+    my $self = shift->SUPER::new;
 
-    # $controller is not required but should be a PNI::GUI::Tk::Controller
-    my $controller = $arg->{controller};
-    if ( defined $controller ) {
-        $controller->isa('PNI::GUI::Tk::Controller')
-          or return PNI::Error::invalid_argument_type;
-    }
-    $self->add( controller => $controller );
+    $self->init_view(@_);
 
-    # it is necessary to use a PNI::Node::Tk::MainWindow
+    # It is necessary to use a PNI::Node::Tk::MainWindow
     # so PNI loop and Tk mainloop can coexist
     my $main_window_node = PNI::node 'Tk::MainWindow';
-    my $tk_main_window = $main_window_node->get_output('main_window')->get_data;
+
+    my $tk_main_window = $main_window_node->get_output('object')->get_data;
+
     $tk_main_window->protocol( 'WM_DELETE_WINDOW',
-        sub { return $controller->close_window; } );
+        sub { $self->get_controller->close_window; } );
+
     $self->add( tk_main_window => $tk_main_window );
 
-    ### new: __PACKAGE__ . ' id=' . $self->id
+    # TODO add key bindings
+    #$self->default_tk_bindings;
+
     return $self;
 }
 
-sub get_controller { return shift->get('controller'); }
+sub default_tk_bindings {
+    my $self           = shift;
+    my $tk_main_window = $self->get_tk_main_window;
 
-# return $tk_main_window
-sub get_tk_main_window { return shift->get('tk_main_window'); }
+    $tk_main_window->bind(
+        '<Any-KeyPress>' => sub {
+            my ($c) = @_;
+            my $e = $c->XEvent;
+            my ( $x, $y, $W, $K, $A ) = ( $e->x, $e->y, $e->K, $e->W, $e->A );
+
+            print "A key was pressed:\n";
+            print "  x = $x\n";
+            print "  y = $y\n";
+            print "  W = $K\n";
+            print "  K = $W\n";
+            print "  A = $A\n";
+        }
+    );
+}
+
+# return $tk_main_window : Tk::MainWindow
+sub get_tk_main_window { shift->get('tk_main_window') }
 
 sub set_title {
     my $self  = shift;
     my $title = shift
       or return PNI::Error::missing_required_argument;
 
-    my $tk_main_window = $self->get_tk_main_window;
-    $tk_main_window->title($title);
+    $self->get_tk_main_window->title($title);
 }
 
 1;
@@ -51,7 +62,11 @@ __END__
 
 =head1 NAME
 
-PNI::GUI::Tk::Window - 
+PNI::GUI::Tk::Window
+
+=head1 METHODS
+
+=head2 C<get_tk_main_window>
 
 =cut
 

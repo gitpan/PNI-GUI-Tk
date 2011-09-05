@@ -1,44 +1,48 @@
 package PNI::GUI::Tk::Canvas::Text;
+use parent 'PNI::GUI::Tk::Canvas::Item';
 use strict;
-use warnings;
-use base 'PNI::GUI::Tk::Canvas::Item';
-use PNI;
 use PNI::Error;
 
 sub new {
-    my $class = shift;
-    my $arg   = {@_};
-    my $self  = $class->SUPER::new(@_)
+    my $self = shift->SUPER::new(@_)
       or return PNI::Error::unable_to_create_item;
+    my $arg = {@_};
 
-    my $y = $arg->{y};
-    $self->add( y => $y );
+    $arg->{text}
+      or return PNI::Error::missing_required_argument;
 
-    my $x = $arg->{x};
-    $self->add( x => $x );
+    $arg->{y}
+      or return PNI::Error::missing_required_argument;
 
-    my $text = $arg->{text};
-    $self->add( text => $text );
+    $arg->{x}
+      or return PNI::Error::missing_required_argument;
 
-    my $tk_canvas = $self->get_tk_canvas;
+    # TODO AGGGGIUUUSTAAAAAAAAAAAAAAAAAAAAAAAAMIIIIIII !!!!!!!
+    my $node =
+      $self->get_canvas->get_controller->get_scenario->get_scenario->add_node(
+        type => 'Tk::Canvas::Text' );
 
-    my $node = PNI::node 'Tk::Canvas::Text';
-    $node->get_input('canvas')->set_data($tk_canvas);
-    $node->get_input('text')->set_data($text);
-    $node->get_input('y')->set_data($y);
-    $node->get_input('x')->set_data($x);
+    $node->get_input('text')->set_data( $arg->{text} );
+    $node->get_input('y')->set_data( $arg->{y} );
+    $node->get_input('x')->set_data( $arg->{x} );
 
-    $self->add( node => $node );
-
-    $node->task;
-
-    my $tk_id = $node->get_output('tk_id')->get_data;
-    $self->set( tk_id => $tk_id );
+    $self->set_node($node);
 
     return $self;
 }
 
-sub get_node { shift->get('node') }
+sub get_text { shift->get_node->get_input('text')->get_data }
+
+# TODO per ora faccio questo override poi quando tutti i canvas item avranno il loro nodo posso toglierlo
+sub get_tk_id { shift->get_node->get_output('tk_id')->get_data }
+
+sub set_text {
+    my $self = shift;
+    my $text = shift
+      or return PNI::Error::missing_required_argument;
+
+    $self->configure( -text => $text );
+}
 
 1;
 __END__
@@ -49,6 +53,5 @@ PNI::GUI::Tk::Canvas::Text - Tk::Canvas text item
 
 =head1 METHODS
 
-=head2 C<get_node>
-
 =cut
+

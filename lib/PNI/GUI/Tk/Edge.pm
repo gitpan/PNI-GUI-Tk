@@ -1,6 +1,6 @@
 package PNI::GUI::Tk::Edge;
+use parent qw ( PNI::GUI::Edge PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::GUI::Edge';
 use PNI::Error;
 use PNI::GUI::Tk::Canvas::Line;
 
@@ -9,28 +9,23 @@ sub new {
       or return PNI::Error::unable_to_create_item;
     my $arg = {@_};
 
-    # controller is required
-    my $controller = $arg->{controller}
-      or return PNI::Error::missing_required_argument;
+    $self->init_view(@_)
+        or return PNI::Error::generic;
 
-    # controller must be a PNI::GUI::Tk::Controller
-    $controller->isa('PNI::GUI::Tk::Controller')
-      or return PNI::Error::invalid_argument_type;
+    my $controller = $self->get_controller;
 
-    $self->add( controller => $controller );
-
-    # source is not required but should be a PNI::GUI::Tk::Output
+    # source is not required but should be a PNI::GUI::Tk::Slot::Out
     my $source = $arg->{source};
     if ( defined $source ) {
-        $source->isa('PNI::GUI::Tk::Output')
+        $source->isa('PNI::GUI::Tk::Slot::Out')
           or return PNI::Error::invalid_argument_type;
     }
     $self->add( source => $source );
 
-    # target is not required but should be a PNI::GUI::Tk::Input
+    # target is not required but should be a PNI::GUI::Tk::Slot::In
     my $target = $arg->{target};
     if ( defined $target ) {
-        $target->isa('PNI::GUI::Tk::Input')
+        $target->isa('PNI::GUI::Tk::Slot::In')
           or return PNI::Error::invalid_argument_type;
     }
     $self->add( target => $target );
@@ -43,7 +38,7 @@ sub new {
     my $start_x = $arg->{start_x} || $source->get_center_x;
 
     my $line = PNI::GUI::Tk::Canvas::Line->new(
-        canvas  => $self->get_canvas,
+        canvas  => $controller->get_canvas,
         end_y   => $end_y,
         end_x   => $end_x,
         start_y => $start_y,
@@ -63,18 +58,12 @@ sub default_tk_bindings {
     my $self       = shift;
     my $controller = $self->get_controller;
     my $line_tk_id = $self->get_line->get_tk_id;
-    my $tk_canvas  = $self->get_tk_canvas;
+    my $tk_canvas  = $controller->get_canvas->get_tk_canvas;
 
     $tk_canvas->bind( $line_tk_id,
         '<ButtonPress-1>' => [ sub { $controller->select_edge(@_); }, $self ] );
 
 }
-
-# return $canvas : PNI::GUI::Tk::Canvas
-sub get_canvas { shift->get_controller->get_canvas }
-
-# return $controller : PNI::GUI::Tk::Controller
-sub get_controller { shift->get('controller') }
 
 sub get_end_y { shift->get_line->get_end_y }
 
@@ -83,7 +72,7 @@ sub get_end_x { shift->get_line->get_end_x }
 # return $line : PNI::GUI::Tk::Canvas::Line
 sub get_line { shift->get('line') }
 
-# return $source : PNI::GUI::Tk::Output
+# return $source : PNI::GUI::Tk::Slot::Out
 sub get_source { shift->get('source') }
 
 # return $source_node : PNI::GUI::Tk::Node
@@ -93,10 +82,7 @@ sub get_start_y { shift->get_line->get_start_y }
 
 sub get_start_x { shift->get_line->get_start_x }
 
-# return $tk_canvas : Tk::Canvas
-sub get_tk_canvas { shift->get_controller->get_tk_canvas }
-
-# return $target : PNI::GUI::Tk::Input
+# return $target : PNI::GUI::Tk::Slot::In
 sub get_target { shift->get('target') }
 
 # return $target_node : PNI::GUI::Tk::Node
@@ -138,7 +124,7 @@ sub set_source {
     my $self   = shift;
     my $source = shift
       or return PNI::Error::missing_required_argument;
-    $source->isa('PNI::GUI::Tk::Output')
+    $source->isa('PNI::GUI::Tk::Slot::Out')
       or return PNI::Error::invalid_argument_type;
 
     my $line = $self->get_line;
@@ -156,7 +142,7 @@ sub set_target {
     my $self   = shift;
     my $target = shift
       or return PNI::Error::missing_required_argument;
-    $target->isa('PNI::GUI::Tk::Input')
+    $target->isa('PNI::GUI::Tk::Slot::In')
       or return PNI::Error::invalid_argument_type;
 
     my $line = $self->get_line;
@@ -180,8 +166,6 @@ PNI::GUI::Tk::Edge -
 =head1 METHODS
 
 =head2 C<default_tk_bindings>
-
-=head2 C<get_canvas>
 
 =head2 C<get_end_x>
 

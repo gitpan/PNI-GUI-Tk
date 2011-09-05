@@ -1,6 +1,6 @@
 package PNI::GUI::Tk::Controller;
+use parent 'PNI::Item';
 use strict;
-use base 'PNI::Item';
 use PNI;
 use PNI::Error;
 use PNI::File;
@@ -14,8 +14,8 @@ use PNI::GUI::Tk::Scenario;
 use PNI::GUI::Tk::Window;
 
 sub new {
-    my $self  = shift->SUPER::new;
-    my $arg   = {@_};
+    my $self = shift->SUPER::new;
+    my $arg  = {@_};
 
     # app is required
     my $app = $arg->{app}
@@ -27,14 +27,14 @@ sub new {
 
     $self->add( app => $app );
 
-    # create window
+    # Create window.
     my $window = PNI::GUI::Tk::Window->new( controller => $self );
     $self->add( window => $window );
 
-    # create menu;
+    # Create menu.
     $self->add( menu => PNI::GUI::Tk::Menu->new( controller => $self ) );
 
-    # create canvas
+    # Create canvas.
     $self->add(
         canvas => PNI::GUI::Tk::Canvas->new(
             controller => $self,
@@ -42,7 +42,7 @@ sub new {
         )
     );
 
-    # create scenario
+    # Create scenario.
     my $scenario = PNI::GUI::Tk::Scenario->new(
         controller => $self,
         file       => $arg->{file},
@@ -53,50 +53,86 @@ sub new {
 
     $self->add( scenario => $scenario );
 
-    # set window title with .pni file path
+    # Set window title with .pni file path.
     $self->set_window_title( $scenario->get_file->get_path );
 
-    # finally, load the content of the .pni file
+    # Load the content of the .pni file.
     $self->get_scenario->load_file;
 
-    return $self;
+    return $self
 }
 
-# return 1
+sub add_comment {
+    my $self = shift;
+
+    # Delete node_selector if it exists.
+    $self->del_node_selector if $self->has('node_selector');
+
+    $self->get_scenario->add_comment(@_);
+}
+
+sub add_comment_editor {
+    my $self    = shift;
+    my $comment = shift
+      or return PNI::Error::missing_required_argument;
+
+    print "TODO : comment editor for $comment\n";
+
+    #my $comment_editor = PNI::GUI::Tk::Comment_editor->new();
+}
+
+# return $node : PNI::GUI::Tk::Node
 sub add_node {
     my $self = shift;
-    $self->get_scenario->add_node(@_);
-    return $self->del_node_selector;
+
+    # Delete node_selector if it exists.
+    $self->del_node_selector if $self->has('node_selector');
+
+    return $self->get_scenario->add_node(@_);
 }
 
-# return 1
-sub add_node_selector {
-    my $self   = shift;
-    my $canvas = $self->get_canvas;
+sub add_node_inspector {
+    my $self = shift;
 
-    my $node_selector = PNI::GUI::Tk::Node_selector->new(@_);
+    my $node_inspector = PNI::GUI::Tk::Node_inspector->new(
+        controller => $self,
+        @_
+    ) or return PNI::Error::unable_to_create_item;
+
+    $self->add( node_inspector => $node_inspector );
+
+    $self->get_canvas->opened_node_inspector;
+}
+
+sub add_node_selector {
+    my $self = shift;
+
+    my $node_selector = PNI::GUI::Tk::Node_selector->new(
+        controller => $self,
+        @_
+    ) or return PNI::Error::unable_to_create_item;
 
     $self->add( node_selector => $node_selector );
 
-    $canvas->opened_node_selector;
-
-    return 1;
+    $self->get_canvas->opened_node_selector;
 }
 
-# return 1
+# TODO sarebbe del_window
 sub close_window {
     my $self = shift;
     my $app  = $self->get_app;
 
     $self->get_tk_main_window->destroy;
 
-    return $app->del_controller($self);
+    $app->del_controller($self);
 }
 
 sub connect_edge_to_input {
     my $self = shift;
+
     my $edge = shift
       or return PNI::Error::missing_required_argument;
+
     my $input = shift
       or return PNI::Error::missing_required_argument;
 
@@ -104,15 +140,13 @@ sub connect_edge_to_input {
 
     if ( $input->is_connected ) {
         my $old_edge = $input->get_edge;
-        $self->destroy_edge($old_edge);
+        $self->del_edge($old_edge);
     }
 
     $edge->set_target($input);
     $input->set_edge($edge);
 
     $self->default_tk_bindings;
-
-    return 1;
 }
 
 sub connect_edge_to_output {
@@ -126,15 +160,15 @@ sub connect_edge_to_output {
 
     $edge->set_source($output);
     $output->add_edge($edge);
-
-    return 1;
 }
 
-# return 1
 sub connecting_edge {
-    my $self   = shift;
+    my $self = shift;
+
     my $output = shift
       or return PNI::Error::missing_required_argument;
+
+# TODO non mi sembra molto elegante questo metodo, sicuramente si puo migliorare o anche eliminare
 
     my $y = $output->get_center_y;
     my $x = $output->get_center_x;
@@ -147,8 +181,6 @@ sub connecting_edge {
     );
     $self->connect_edge_to_output( $edge, $output );
     $self->get_canvas->connecting_edge_tk_bindings($edge);
-
-    return 1;
 }
 
 sub default_tk_bindings {
@@ -161,29 +193,17 @@ sub default_tk_bindings {
     for my $slot ( $scenario->get_inputs, $scenario->get_outputs ) {
         $slot->default_tk_bindings;
     }
-
-    return 1;
 }
 
-# return 1
-sub del_node_selector {
-    my $self          = shift;
-    my $canvas        = $self->get_canvas;
-    my $node_selector = $self->get_node_selector;
+sub del_comment {
+    my $self    = shift;
+    my $comment = shift
+      or return PNI::Error::missing_required_argument;
 
-    my $tk_canvas = $self->get_tk_canvas;
-    my $window    = $node_selector->get_window;
-    my $tk_id     = $window->get_tk_id;
-    $tk_canvas->delete($tk_id);
-
-    $self->del('node_selector');
-
-    $canvas->default_tk_bindings;
-
-    return 1;
+    print "TODO del comment $comment\n";
 }
 
-sub destroy_edge {
+sub del_edge {
     my $self = shift;
     my $edge = shift
       or return PNI::Error::missing_required_argument;
@@ -201,9 +221,72 @@ sub destroy_edge {
     $self->default_tk_bindings;
 }
 
+sub del_node {
+    my $self = shift;
+    my $node = shift
+      or return PNI::Error::missing_required_argument;
+
+    my $scenario  = $self->get_scenario;
+    my $tk_canvas = $self->get_tk_canvas;
+
+    # Delete all edges first.
+    for my $input ( $node->get_inputs ) {
+        my $edge = $input->get_edge;
+        next unless $edge;
+        $self->del_edge( $edge );
+    }
+    for my $output ( $node->get_outputs ) {
+        for my $edge ( $output->get_edges ) {
+            $self->del_edge($edge);
+
+            #TODO usa i grep map ecc
+        }
+    }
+
+    # TODO sarebbe da mettere in PNI::GUI::Tk::Canvas::Group
+    # piu che altro dentro il del_node dello scenario
+    $tk_canvas->delete($_) for ( $node->get_tk_ids );
+
+    $scenario->del_node($node);
+
+    $self->default_tk_bindings;
+}
+
+sub del_node_inspector {
+    my $self           = shift;
+    my $canvas         = $self->get_canvas;
+    my $node_inspector = $self->get_node_inspector;
+
+    my $tk_canvas = $self->get_tk_canvas;
+    my $window    = $node_inspector->get_window;
+    my $tk_id     = $window->get_tk_id;
+    $tk_canvas->delete($tk_id);
+
+    $self->del('node_inspector');
+
+    $canvas->default_tk_bindings;
+}
+
+sub del_node_selector {
+    my $self          = shift;
+    my $canvas        = $self->get_canvas;
+    my $node_selector = $self->get_node_selector;
+
+    my $tk_canvas = $self->get_tk_canvas;
+    my $window    = $node_selector->get_window;
+    my $tk_id     = $window->get_tk_id;
+    $tk_canvas->delete($tk_id);
+
+    $self->del('node_selector');
+
+    $canvas->default_tk_bindings;
+}
+
 sub get_app { shift->get('app') }
 
 sub get_canvas { shift->get('canvas') }
+
+sub get_node_inspector { shift->get('node_inspector') }
 
 sub get_node_selector { shift->get('node_selector') }
 
@@ -214,16 +297,6 @@ sub get_tk_main_window { shift->get_window->get_tk_main_window }
 sub get_scenario { shift->get('scenario') }
 
 sub get_window { shift->get('window') }
-
-sub open_node_inspector {
-    my $self = shift;
-    my $node = shift;
-
-    return PNI::GUI::Tk::Node_inspector->new(
-        controller => $self,
-        node       => $node,
-    );
-}
 
 sub open_pni_file {
     my $self = shift;
@@ -238,7 +311,7 @@ sub open_pni_file {
 sub save_pni_file {
     my $self     = shift;
     my $scenario = $self->get_scenario;
-    return $scenario->save_file;
+    return $scenario->save_file
 }
 
 sub save_as_pni_file {
@@ -263,9 +336,12 @@ sub set_window_title {
       or return PNI::Error::missing_required_argument;
 
     my $window = $self->get_window;
-    return $window->set_title($title);
+    return $window->set_title($title)
 }
-1;
+
+sub new_window { shift->get_app->add_controller }
+
+1
 __END__
 
 =head1 NAME

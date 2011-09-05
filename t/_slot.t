@@ -8,19 +8,25 @@ use Test::More;
 
 my $app        = PNI::GUI::Tk::App->new;
 my $controller = PNI::GUI::Tk::Controller->new( app => $app );
-my $node       = PNI::GUI::Tk::Node->new(
-    center_y   => 0,
-    center_x   => 0,
+my $node       = PNI::node;
+my $slot       = $node->add_input('in');
+my $gui_node   = PNI::GUI::Tk::Node->new(
+    center_y   => 1,
+    center_x   => 1,
     controller => $controller,
-    height     => 0,
-    node       => PNI::node,
-    width      => 0,
+    height     => 1,
+    node       => $node,
+    width      => 1,
 );
 
-my $slot = PNI::GUI::Tk::Slot->new( node => $node );
-isa_ok $slot, 'PNI::GUI::Tk::Slot';
+my $gui_slot = PNI::GUI::Tk::Slot->new(
+    controller => $controller,
+    node       => $gui_node,
+    slot       => $slot,
+);
+isa_ok $gui_slot, 'PNI::GUI::Tk::Slot';
 
-is $slot->get_node, $node;
+is $gui_slot->get_node, $gui_node;
 
 done_testing;
 __END__

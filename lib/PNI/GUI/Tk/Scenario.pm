@@ -1,36 +1,42 @@
 package PNI::GUI::Tk::Scenario;
+use parent qw( PNI::GUI::Scenario PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::GUI::Scenario';
 use PNI::Error;
 use PNI::GUI::Node;
+use PNI::GUI::Tk::Comment;
 use PNI::GUI::Tk::Edge;
 use PNI::GUI::Tk::Node;
 
 sub new {
     my $self = shift->SUPER::new(@_)
       or return PNI::Error::unable_to_create_item;
-    my $arg = {@_};
 
-    # controller is required
-    my $controller = $arg->{controller}
-      or return PNI::Error::missing_required_argument;
-
-    # controller must be a PNI::GUI::Tk::Controller
-    $controller->isa('PNI::GUI::Tk::Controller')
-      or return PNI::Error::invalid_argument_type;
-
-    $self->add( controller => $controller );
+    $self->init_view(@_);
 
     return $self;
 }
 
+# return $comment : PNI::GUI::Tk::Comment
+sub add_comment {
+    my $self = shift;
+
+    my $comment = PNI::GUI::Tk::Comment->new(
+        controller => $self->get_controller,
+        @_
+    ) or return PNI::Error::unable_to_create_item;
+
+    $self->get('comments')->{ $comment->id } = $comment;
+
+    return $comment;
+
+}
+
 # return $edge : PNI::GUI::Tk::Edge
 sub add_edge {
-    my $self       = shift;
-    my $controller = $self->get_controller;
+    my $self = shift;
 
     my $edge = PNI::GUI::Tk::Edge->new(
-        controller => $controller,
+        controller => $self->get_controller,
         @_
     ) or return PNI::Error::unable_to_create_item;
 
@@ -41,24 +47,37 @@ sub add_edge {
 
 # return $node : PNI::GUI::Tk::Node
 sub add_node {
-    my $self       = shift;
-    my $controller = $self->get_controller;
-    my $scenario   = $self->get_scenario;
+    my $self = shift;
 
 # TODO questo sarebe sbagliato, funziona solo perche' non si accavallano i nomi degli argomenti
 #      infatti in add_edge mi dava problemi
-    my $pni_node = $scenario->add_node(@_)
+    my $node = $self->get_scenario->add_node(@_)
       or return PNI::Error::unable_to_create_item;
 
-    my $node = PNI::GUI::Tk::Node->new(
-        controller => $controller,
-        node       => $pni_node,
-        @_
+# Check if a specific node view is available, or defaults to PNI::GUI::Tk::Node.
+    my $node_view      = 'PNI::GUI::Tk::Node::' . $node->get_type;
+    my $node_view_path = $node_view . '.pm';
+    $node_view_path =~ s/::/\//g;
+    eval { require $node_view_path }
+      or do { $node_view = 'PNI::GUI::Tk::Node' };
+
+    my $gui_node = $node_view->new(
+        controller => $self->get_controller,
+        node       => $node,
+        @_,
     ) or return PNI::Error::unable_to_create_item;
 
-    $self->get('nodes')->{ $node->id } = $node;
+    $self->get('nodes')->{ $gui_node->id } = $gui_node;
 
-    return $node;
+    return $gui_node;
+}
+
+sub del_node {
+    my $self = shift;
+    my $node = shift
+      or return PNI::Error::missing_required_argument;
+
+    delete $self->get('nodes')->{ $node->id };
 }
 
 sub del_edge {
@@ -67,13 +86,9 @@ sub del_edge {
       or return PNI::Error::missing_required_argument;
 
     delete $self->get('edges')->{ $edge->id };
-
-    return 1;
 }
 
-sub get_controller { shift->get('controller') }
-
-# return @inputs: PNI::GUI::Tk::Input
+# return @inputs : PNI::GUI::Tk::Input
 sub get_inputs {
     my $self = shift;
     my @inputs;
@@ -107,7 +122,7 @@ __END__
 
 =head1 NAME
 
-PNI::GUI::Tk::Scenario - 
+PNI::GUI::Tk::Scenario
 
 =head1 METHODS
 

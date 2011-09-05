@@ -1,29 +1,30 @@
 package PNI::GUI::Tk::Canvas::Rectangle;
+use parent 'PNI::GUI::Tk::Canvas::Item';
 use strict;
-use warnings;
-use base 'PNI::GUI::Tk::Canvas::Item';
 use PNI::Error;
 
 sub new {
-    my $self  = shift->SUPER::new(@_)
+    my $self = shift->SUPER::new(@_)
       or return PNI::Error::unable_to_create_item;
-    my $arg   = {@_};
+    my $arg = {@_};
 
-    my $y1 = $arg->{y1};
-    $self->add( y1 => $y1 );
+    $arg->{y1}
+      or return PNI::Error::missing_required_argument;
 
-    my $y2 = $arg->{y2};
-    $self->add( y2 => $y2 );
+    $arg->{y2}
+      or return PNI::Error::missing_required_argument;
 
-    my $x1 = $arg->{x1};
-    $self->add( x1 => $x1 );
+    $arg->{x1}
+      or return PNI::Error::missing_required_argument;
 
-    my $x2 = $arg->{x2};
-    $self->add( x2 => $x2 );
+    $arg->{x2}
+      or return PNI::Error::missing_required_argument;
 
-    my $tk_canvas = $self->get_tk_canvas;
-    my $tk_id = $tk_canvas->createRectangle( $x1, $y1, $x2, $y2 );
-    $self->set( tk_id => $tk_id );
+    $self->set(
+        tk_id => $self->get_tk_canvas->createRectangle(
+            $arg->{x1}, $arg->{y1}, $arg->{x2}, $arg->{y2}
+        )
+    );
 
     return $self;
 }

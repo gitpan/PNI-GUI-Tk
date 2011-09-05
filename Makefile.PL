@@ -6,7 +6,7 @@ WriteMakefile
   EXE_FILES     => ['pniguitk'],
   NAME          => 'PNI-GUI-Tk',
   PREREQ_PM     => {
-    PNI::Core      => '0.03',
+    PNI::Core      => '0.04',
     PNI::Node::Tk  => '0.14',
     Tk::MatchEntry => '0.4',
   },

@@ -1,10 +1,9 @@
 package PNI::GUI::Tk;
-use strict;
+
 use Tk;    # it is enough say "use Tk" just once
 
-our $VERSION = '0.12';
+our $VERSION = '0.14';
 
-1;
 __END__
 
 =head1 NAME
@@ -15,7 +14,11 @@ PNI::GUI::Tk - Perl Node Interface GUI, implemented with Tk
 
 L<PNI>
 
+L<PNI::GUI::Tk::App>
+
 L<pniguitk>
+
+L<Tk>
 
 =head1 AUTHOR
 

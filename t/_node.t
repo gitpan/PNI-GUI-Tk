@@ -7,7 +7,9 @@ use Test::More;
 
 my $app        = PNI::GUI::Tk::App->new;
 my $controller = PNI::GUI::Tk::Controller->new( app => $app );
-my $pni_node       = PNI::node;
+my $pni_node   = PNI::node;
+$pni_node->add_input('in');
+$pni_node->add_output('out');
 my $center_y   = 10;
 my $center_x   = 10;
 my $width      = 10;

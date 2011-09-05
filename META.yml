@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               PNI-GUI-Tk
-version:            0.12
+version:            0.14
 abstract:           Perl Node Interface GUI, implemented with Tk
 author:
     - G. Casati <fibo@cpan.org>
@@ -11,7 +11,7 @@ configure_requires:
 build_requires:
     ExtUtils::MakeMaker:  0
 requires:
-    PNI::Core:       0.03
+    PNI::Core:       0.04
     PNI::Node::Tk:   0.14
     Tk::MatchEntry:  0.4
 no_index:

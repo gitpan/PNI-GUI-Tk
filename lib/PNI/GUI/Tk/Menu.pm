@@ -1,36 +1,33 @@
 package PNI::GUI::Tk::Menu;
+use parent qw( PNI::Item PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::Item';
-use Tk::Dialog;
 
 sub new {
-    my $class = shift;
-    my $arg   = {@_};
-    my $self  = $class->SUPER::new(@_)
-      or return PNI::Error::unable_to_create_item;
+    my $self = shift->SUPER::new;
+    my $arg  = {@_};
 
-    # $controller is not required but should be a PNI::GUI::Tk::Controller
-    my $controller = $arg->{controller};
-    if ( defined $controller ) {
-        $controller->isa('PNI::GUI::Tk::Controller')
-          or return PNI::Error::invalid_argument_type;
-    }
-    $self->add( controller => $controller );
+    $self->init_view(@_);
 
-    my $window = $self->get_window;
+    my $controller = $self->get_controller;
+    my $window = $controller->get_window;
 
     my $tk_window = $window->get_tk_main_window;
 
     my $tk_menu = $tk_window->Menu( -type => 'menubar' );
 
-    # attach menu to its window
+
+    # Attach menu to its window.
     $tk_window->configure( -menu => $tk_menu );
 
-    # populate menu entries
+    # Populate menu entries.
     $tk_menu->Cascade(
         -label     => 'Scenario',
         -tearoff   => 1,
         -menuitems => [
+            [
+                Button   => 'New',
+                -command => [ sub { $controller->new_window; } ]
+            ],
             [
                 Button   => 'Open',
                 -command => [ sub { $controller->open_pni_file; } ]
@@ -83,35 +80,12 @@ sub new {
     return $self;
 }
 
-sub get_controller { return shift->get('controller') }
-
-sub get_window { return shift->get_controller->get_window; }
-
 1;
 __END__
 
 =head1 NAME
 
-PNI::GUI::Tk::Menu - 
-
-
-=head1 METHODS
-
-=head2 C<get_controller>
-
-=head2 C<get_window>
-
-
-
-=head1 AUTHOR
-
-G. Casati , E<lt>fibo@cpan.orgE<gt>
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright (C) 2009-2011, Gianluca Casati
-
-This program is free software, you can redistribute it and/or modify it
-under the same terms of the Artistic License version 2.0 .
+PNI::GUI::Tk::Menu 
 
 =cut
+

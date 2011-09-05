@@ -1,7 +1,6 @@
 package PNI::GUI::Tk::Canvas::Line;
+use parent 'PNI::GUI::Tk::Canvas::Item';
 use strict;
-use warnings;
-use base 'PNI::GUI::Tk::Canvas::Item';
 use PNI::Error;
 
 sub new {
@@ -22,6 +21,7 @@ sub new {
     my $start_x = $arg->{start_x};
     $self->add( start_x => $start_x );
 
+    # TODO metti nella forma come Window e Text
     my $tk_canvas = $self->get_tk_canvas;
     my $tk_id = $tk_canvas->createLine( $start_x, $start_y, $end_x, $end_y );
     $self->set( tk_id => $tk_id );
@@ -29,6 +29,7 @@ sub new {
     return $self;
 }
 
+# TODO questi metodi sono da rivedere, devo usare le api di Tk, non della memoria aggiuntiva per valori che Tk mi da gia
 sub get_end_y { shift->get('end_y') }
 
 sub get_end_x { shift->get('end_x') }

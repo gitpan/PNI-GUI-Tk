@@ -1,25 +1,23 @@
 package PNI::GUI::Tk::Slot;
+use parent qw( PNI::GUI::Slot PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::GUI::Slot';
+use PNI::Error;
 
 sub new {
-    my $self = shift->SUPER::new(@_);
-    my $arg  = {@_};
+    my $self = shift->SUPER::new(@_)
+      or return PNI::Error::unable_to_create_item;
+    my $arg = {@_};
 
-    my $node = $self->get_node;
-
-    my $center_y = $arg->{center_y};
-    $self->add( center_y => $center_y );
-
-    my $center_x = $arg->{center_x};
-    $self->add( center_x => $center_x );
+    $self->init_view(@_);
 
     # $half_side defaults to 4
     my $half_side = $arg->{half_side} || 4;
     $self->add( half_side => $half_side );
 
-    my $canvas        = $self->get_canvas;
-    my $tk_canvas     = $self->get_tk_canvas;
+    my $canvas        = $self->get_controller->get_canvas;
+    my $center_y = $self->get_center_y;
+    my $center_x = $self->get_center_x;
+    my $tk_canvas     = $canvas->get_tk_canvas;
     my $y1            = $center_y - $half_side;
     my $y2            = $center_y + $half_side;
     my $x1            = $center_x - $half_side;
@@ -37,6 +35,7 @@ sub new {
 
     # TODO verifica se serve mettere l'id del node o si puo mettere il self id
     #      oppure addirittura non serve neanche
+    my $node = $self->get_node;
     $tk_canvas->addtag( $node->id, 'withtag', $border->get_tk_id );
     $self->add( tk_id  => $border->get_tk_id );
     $self->add( border => $border );
@@ -44,34 +43,44 @@ sub new {
     return $self;
 }
 
-# return $canvas : PNI::GUI::Tk::Canvas
-sub get_canvas { shift->get_controller->get_canvas; }
-
 # return $border : PNI::GUI::Tk::Canvas::Rectangle
 sub get_border { shift->get('border') }
 
-sub get_center_y { shift->get('center_y') }
+sub get_info {
+    my $self = shift;
+    my $slot = $self->get_slot;
 
-sub get_center_x { shift->get('center_x') }
+    my $data;
 
-# return $controller : PNI::GUI::Tk::Controller
-sub get_controller { shift->get_node->get_controller }
+    if ( $slot->is_defined ) {
+        $data = $slot->get_data;
+    }
+    else { $data = 'UNDEF' }
 
-sub get_name { shift->get_slot->get_name }
-
-sub get_slot { shift->get('slot') }
-
-# return $tk_canvas: PNI::GUI::Tk::Canvas
-sub get_tk_canvas { shift->get_controller->get_tk_canvas }
+    return $slot->get_name . ' : ' . $data;
+}
 
 sub get_tk_id { shift->get('tk_id') }
 
-1;
+sub hide_info {
+    my $self             = shift;
+    my $tk_info_label_id = shift;
+
+    $self->get_controller->get_canvas->get_tk_canvas->delete($tk_info_label_id);
+
+    $self->get_border->on_leave(undef);
+}
+
+1
 __END__
 
 =head1 NAME
 
 PNI::GUI::Tk::Slot
+
+=head1 METHODS
+
+=head2 C<hide_info>
 
 =cut
 

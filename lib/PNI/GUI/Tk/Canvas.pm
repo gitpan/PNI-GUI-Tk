@@ -1,38 +1,30 @@
 package PNI::GUI::Tk::Canvas;
+use parent qw( PNI::Item PNI::GUI::Tk::View );
 use strict;
-use base 'PNI::Item';
 
 sub new {
-    my $class = shift;
-    my $arg   = {@_};
-    my $self  = $class->SUPER::new(@_)
-      or return PNI::Error::unable_to_create_item;
+    my $self = shift->SUPER::new;
+    my $arg  = {@_};
 
-    # $controller is required
-    my $controller = $arg->{controller}
-      or return PNI::Error::missing_required_argument;
+    $self->init_view(@_);
 
-    # $controller must be a PNI::GUI::Tk::Controller
-    $controller->isa('PNI::GUI::Tk::Controller')
-      or return PNI::Error::invalid_argument_type;
-
-    $self->add( controller => $controller );
-
-    # $tk_canvas is required
-    my $tk_canvas = $arg->{tk_canvas}
-      or return PNI::Error::missing_required_argument;
-
-    # $tk_canvas must be a Tk::Canvas
-    $tk_canvas->isa('Tk::Canvas') or return PNI::Error::invalid_argument_type;
-
+    my $tk_canvas =
+      $self->get_controller->get_window->get_tk_main_window->Canvas();
     $self->add( tk_canvas => $tk_canvas );
+
+    $tk_canvas->configure(
+        -confine          => 0,
+        -height           => 400,
+        -width            => 600,
+        -scrollregion     => [ 0, 0, 1000, 1000 ],
+        -xscrollincrement => 1,
+        -background       => 'white'
+    );
 
     $tk_canvas->pack( -expand => 1, -fill => 'both' );
 
     $self->default_tk_bindings;
-    $self->default_tk_configure;
 
-    ### new: __PACKAGE__ . ' id=' . $self->id
     return $self;
 }
 
@@ -73,7 +65,7 @@ sub connect_or_destroy_edge {
     }
 
     if ( $closest_distance > 10 ) {
-        return $controller->destroy_edge($edge);
+        return $controller->del_edge($edge);
     }
     else {
         return $controller->connect_edge_to_input( $edge, $closest_input );
@@ -97,11 +89,8 @@ sub connecting_edge_tk_bindings {
     $tk_canvas->CanvasBind(
         '<ButtonRelease-1>' => [ \&connect_or_destroy_edge, $self, $edge ] );
     $tk_canvas->CanvasBind( '<Double-Button-1>' => undef );
-
-    return 1;
 }
 
-# return 1
 sub default_tk_bindings {
     my $self      = shift;
     my $tk_canvas = $self->get_tk_canvas;
@@ -110,23 +99,8 @@ sub default_tk_bindings {
     $tk_canvas->CanvasBind( '<ButtonPress-1>'   => undef );
     $tk_canvas->CanvasBind( '<ButtonRelease-1>' => undef );
     $tk_canvas->CanvasBind( '<Double-Button-1>' => [ \&double_click, $self ] );
-
-    return 1;
 }
 
-# return 1 ??
-sub default_tk_configure {
-    return shift->get_tk_canvas->configure(
-        -confine          => 0,
-        -height           => 400,
-        -width            => 600,
-        -scrollregion     => [ 0, 0, 1000, 1000 ],
-        -xscrollincrement => 1,
-        -background       => 'white'
-    );
-}
-
-# return 1
 sub double_click {
     my $tk_canvas  = shift;
     my $self       = shift;
@@ -135,60 +109,46 @@ sub double_click {
     my $x = $tk_canvas->XEvent->x;
     my $y = $tk_canvas->XEvent->y;
 
-    if ( $tk_canvas->find( 'withtag', 'current' ) ) {
+    # Do nothing when double clicking an item
+    return if $tk_canvas->find( 'withtag', 'current' );
 
-        # do nothing when double clicking an item
-    }
-    else {
+    # Disable default double click callout
+    # so there is only one selector open
+    $tk_canvas->CanvasBind( '<Double-Button-1>' => undef );
 
-        # disable default double click callout
-        # so there is only one selector open
-        $tk_canvas->CanvasBind( '<Double-Button-1>' => undef );
-
-        # and create node selector
-        $controller->add_node_selector(
-            controller => $controller,
-            x          => $x,
-            y          => $y,
-        );
-    }
-    return 1;
+    # Create node selector
+    $controller->add_node_selector(
+        x => $x,
+        y => $y,
+    );
 }
 
-sub get_controller { return shift->get('controller') }
+# override PNI::GUI::Tk::View::get_tk_canvas
+# return $tk_canvas : Tk::Canvas
+sub get_tk_canvas { shift->get('tk_canvas') }
 
-sub get_tk_canvas { return shift->get('tk_canvas') }
+sub opened_node_inspector {
+    my $self = shift;
+
+    # Clicking the canvas destroys node inspector
+    $self->get_tk_canvas->CanvasBind( '<ButtonPress-1>' =>
+          [ sub { $self->get_controller->del_node_inspector } ] );
+}
 
 sub opened_node_selector {
-    my $self       = shift;
-    my $controller = $self->get_controller;
-    my $tk_canvas  = $self->get_tk_canvas;
+    my $self = shift;
 
-    # clicking the canvas destroys node selector
-    $tk_canvas->CanvasBind(
-        '<ButtonPress-1>' => [ sub { $controller->del_node_selector } ] );
-
-    return 1;
+    # Clicking the canvas destroys node selector
+    $self->get_tk_canvas->CanvasBind( '<ButtonPress-1>' =>
+          [ sub { $self->get_controller->del_node_selector } ] );
 }
 
-1;
+1
 __END__
 
 =head1 NAME
 
-PNI::GUI::Tk::Canvas - 
-
-
-
-=head1 AUTHOR
-
-G. Casati , E<lt>fibo@cpan.orgE<gt>
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright (C) 2009-2011, Gianluca Casati
-
-This program is free software, you can redistribute it and/or modify it
-under the same terms of the Artistic License version 2.0 .
+PNI::GUI::Tk::Canvas
 
 =cut
+

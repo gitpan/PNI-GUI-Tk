@@ -1,34 +1,47 @@
 use strict;
-use PNI::GUI::Tk::Edge;
-use Test::More;
-
-ok 1;
-
-done_testing;
-__END__
-
 use PNI;
-use PNI::Canvas;
+use PNI::GUI::Tk::App;
 use PNI::GUI::Tk::Controller;
+use PNI::GUI::Tk::Edge;
 use PNI::GUI::Tk::Node;
 use Test::More;
 
-my $canvas   = PNI::Canvas->new;
-my $controller = PNI::GUI::Tk::Controller->new;
-my $node     = PNI::node;
-my $center_y = 10;
-my $center_x = 10;
-my $width    = 10;
-my $height   = 10;
+my $input_name  = 'in';
+my $output_name = 'out';
 
-my $node = PNI::GUI::Tk::Node->new( 
-    center_y => $center_y,
-    center_x => $center_x,
-	controller => $controller, 
-    height   => $height,
-    node     => $node,
-    width    => $width,
+my $app = PNI::GUI::Tk::App->new;
+my $controller = PNI::GUI::Tk::Controller->new( app => $app );
+
+my $pni_node1 = PNI::node;
+my $pni_node2 = PNI::node;
+
+$pni_node1->add_output($output_name);
+$pni_node2->add_input($input_name);
+
+my $node1 = PNI::GUI::Tk::Node->new(
+    center_y   => 100,
+    center_x   => 100,
+    controller => $controller,
+    node       => $pni_node1,
 );
-isa_ok $node ,'PNI::GUI::Tk::Node';
 
+my $node2 = PNI::GUI::Tk::Node->new(
+    center_y   => 200,
+    center_x   => 200,
+    controller => $controller,
+    node       => $pni_node2,
+);
+
+my $source = $node1->get_output($output_name);
+my $target = $node2->get_input($input_name);
+
+my $edge = PNI::GUI::Tk::Edge->new(
+    controller => $controller,
+    source => $source,
+    target => $target,
+);
+isa_ok $edge, 'PNI::GUI::Tk::Edge';
+
+done_testing;
+__END__
 

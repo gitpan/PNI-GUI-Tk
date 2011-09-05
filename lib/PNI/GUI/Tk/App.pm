@@ -1,6 +1,6 @@
 package PNI::GUI::Tk::App;
+use parent 'PNI::Item';
 use strict;
-use base 'PNI::Item';
 use PNI;
 use PNI::GUI::Tk;
 use PNI::GUI::Tk::Controller;
@@ -9,24 +9,22 @@ use Tk;
 my $i_am_running;
 
 sub new {
-    my $class = shift;
+    my $self  = shift->SUPER::new;
     my $arg   = {@_};
-    my $self  = $class->SUPER::new;
 
-    print @ARGV;
     $self->add( controller => {} );
 
-    return $self;
+    return $self
 }
 
-# return $controller: PNI::GUI::Tk::Controller
+# return $controller : PNI::GUI::Tk::Controller
 sub add_controller {
     my $self = shift;
 
     my $controller = PNI::GUI::Tk::Controller->new( app => $self, @_ )
       or return PNI::Error::unable_to_create_item;
 
-    return $self->get('controller')->{ $controller->id } = $controller;
+    return $self->get('controller')->{ $controller->id } = $controller
 }
 
 sub del_controller {
@@ -37,7 +35,7 @@ sub del_controller {
     delete $self->get('controller')->{ $controller->id };
     undef $controller;
 
-    # exit if it is the only controller left
+    # Exit if it is the only controller left.
     if ( keys %{ $self->get('controller') } ) {
         return 1;
     }
@@ -46,25 +44,24 @@ sub del_controller {
     }
 }
 
-# return 1
 sub run {
 
     # only one App should be running
     return if $i_am_running;
     $i_am_running = 1;
 
-    # create the first controller 
-    shift->add_controller;
+    # Create the first controller 
+    shift->add_controller(@_);
 
     PNI::loop;
 }
 
-1;
+1
 __END__
 
 =head1 NAME
 
-PNI::GUI::Tk::App - 
+PNI::GUI::Tk::App
 
 =head1 SYNOPSIS 
 
@@ -91,6 +88,10 @@ Remove the specified controller. If there is only one controller, the applicatio
 =head2 C<run>
 
     $app->run;
+
+
+    my $file = PNI::File->new( path => 'path/to/my/file.pni' );
+    $app->run( file => $file );
 
 =cut
 
